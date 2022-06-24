@@ -138,9 +138,10 @@ def main():
     q = db_session.query(Identifier).\
         filter(Identifier.type == 'DOI').\
         filter(Identifier.editions.any()).\
-        filter(Identifier.classifications.any())
+        filter(Identifier.classifications.any()).\
+        filter(Identifier.resources.any())
     count = q.count()
-    print("%s editions of %s have subjects" % (str(count), str(total)))
+    print("%s editions of %s have subjects and resources" % (str(count), str(total)))
     load_query = q.options(
         joinedload(Identifier.editions), joinedload(Identifier.classifications).joinedload(Classification.subject)
     )

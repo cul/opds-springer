@@ -20,6 +20,8 @@ def main():
         filter(Identifier.classifications.any())
     count = q.count()
     print("%s editions of %s have subjects" % (str(count), str(total)))
+    count = q.filter(Identifier.resources.any()).count()
+    print("%s editions of %s have resources and subjects" % (str(count), str(total)))
     load_query = q.options(
         joinedload(Identifier.editions), joinedload(Identifier.classifications).joinedload(Classification.subject)
     )
