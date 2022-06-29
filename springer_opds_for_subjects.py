@@ -113,9 +113,15 @@ def opds_response_links(page_number, total_pages):
         links.append(opds_response_link(page_number - 1, prev_rel))
     return links
 
-def opds_response(page_number, total_pages):
+def opds_response(page_number, count, page_size):
+    total_pages = ceil(count/page_size)
     return {
-        "metadata": { "title": "Springer Test Feed" },
+        "metadata": {
+            "title": "Springer Test Feed",
+            "itemsPerPage": page_size,
+            "currentPage": page_number,
+            "numberOfItems": count
+        },
         "links": opds_response_links(page_number, total_pages),
         "publications": []
     }
@@ -154,7 +160,7 @@ def main():
     while offset < count:
         page_number = int((offset / page_size) + 1)
         identifiers_page = load_query.offset(offset).all()
-        response = opds_response(page_number, total_pages)
+        response = opds_response(page_number, count, page_size)
         for identifier in identifiers_page:
             response['publications'].append(opds_publication(identifier, timestamp))
         cache_page(output_base_dir, response, page_number)
