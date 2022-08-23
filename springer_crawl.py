@@ -38,7 +38,7 @@ def crawl_springer(already_crawled=0):
         except Exception as err:
             raise (
                 err,
-                "Requested {PER_PAGE} starting at {start} with {total} total records.",
+                f"Requested {PER_PAGE} starting at {start} with {total} total records.",
             )
             pass
 
