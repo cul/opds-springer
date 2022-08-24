@@ -1,69 +1,62 @@
 # Generate OPDS v2.0 JSON from API output
 from configparser import ConfigParser
-from datetime import datetime
 from pathlib import Path
 
 import requests
 
-config = ConfigParser()
-current_path = Path(__file__).parents[0].resolve()
-config_path = Path(current_path, "config.ini")
-config.read(str(config_path))
 
+class SpringerCrawler(object):
 
-API_ENDPOINT = "https://api.springernature.com/bookmeta/v1/json"
-API_KEY = config["SPRINGER"]["apiKey"]
-PER_PAGE = 100
+    def __init__(self):
+        self.config = ConfigParser()
+        current_path = Path(__file__).parents[0].resolve()
+        config_path = Path(current_path, "config.ini")
+        self.config.read(str(config_path))
+        self.api_key = self.config["SPRINGER"]["apiKey"]
+        self.api_endpoint = "https://api.springernature.com/bookmeta/v1/json"
+        self.per_page = 100
 
-NOW = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")  # Current timestamp in ISO
+    def crawl(self, already_crawled=0):
+        total = self.get_springer_total()
+        records_retrieved = 0
+        remaining = total - already_crawled
+        while True:
+            try:
+                start = remaining - self.per_page
+                page_data = self.get_springer_page(start)
+                for record in page_data["records"]:
+                    yield record
+                current_total = int(page_data["result"][0]["total"])
+                if current_total != total:
+                    difference = current_total - total
+                    remaining += difference
+                    total = current_total
+                records_retrieved += self.per_page
+                remaining -= self.per_page
+            except Exception as err:
+                raise (
+                    err,
+                    f"Requested {self.per_page} starting at {start} with {total} total records.",
+                )
+                pass
 
-
-def crawl_springer(already_crawled=0):
-    total = get_springer_total()
-    records_retrieved = 0
-    remaining = total - already_crawled
-    while True:
+    def get_springer_page(self, start):
         try:
-            start = remaining - PER_PAGE
-            page_data = get_springer_page(start, PER_PAGE)
-            for record in page_data["records"]:
-                yield record
-            current_total = int(page_data["result"][0]["total"])
-            if current_total != total:
-                difference = current_total - total
-                remaining += difference
-                total = current_total
-            records_retrieved += PER_PAGE
-            remaining -= PER_PAGE
-        except Exception as err:
-            raise (
-                err,
-                f"Requested {PER_PAGE} starting at {start} with {total} total records.",
-            )
-            pass
+            params = {
+                "q": "sort:date",
+                "s": start,
+                "p": self.per_page,
+                "api_key": self.api_key,
+            }
+            response = requests.get(self.api_endpoint, params=params)
+            response.raise_for_status()
+            page_data = response.json()
+            return page_data
+        except Exception:
+            raise
 
-
-def get_springer_page(start, per_page):
-    try:
-        params = {"q": "sort:date", "s": start, "p": per_page, "api_key": API_KEY}
-        response = requests.get(API_ENDPOINT, params=params)
-        response.raise_for_status()
+    def get_springer_total(self):
+        params = {"q": "sort:date", "s": 1, "p": 1, "api_key": self.api_key}
+        response = requests.get(self.api_endpoint, params=params)
         page_data = response.json()
-        return page_data
-    except Exception:
-        raise
-
-
-def get_springer_total():
-    params = {"q": "sort:date", "s": 1, "p": 1, "api_key": API_KEY}
-    response = requests.get(API_ENDPOINT, params=params)
-    page_data = response.json()
-    return int(page_data["result"][0]["total"])
-
-
-def main():
-    crawl_springer()
-
-
-if __name__ == "__main__":
-    main()
+        return int(page_data["result"][0]["total"])
