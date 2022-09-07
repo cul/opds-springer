@@ -6,7 +6,6 @@ import requests
 
 
 class SpringerCrawler(object):
-
     def __init__(self):
         self.config = ConfigParser()
         current_path = Path(__file__).parents[0].resolve()
@@ -17,6 +16,14 @@ class SpringerCrawler(object):
         self.per_page = 100
 
     def crawl(self, already_crawled=0):
+        """Crawl Springer API for book records.
+
+        Args:
+            already_crawled (int): offset to skip crawling
+
+        Yields:
+            dict: book record json
+        """
         total = self.get_springer_total()
         records_retrieved = 0
         remaining = total - already_crawled
@@ -41,6 +48,14 @@ class SpringerCrawler(object):
                 pass
 
     def get_springer_page(self, start):
+        """Get page of records from Springer API.
+
+        Args:
+            start (int): return results starting at the number specified
+
+        Returns:
+            dict: page data
+        """
         try:
             params = {
                 "q": "sort:date",
@@ -56,6 +71,11 @@ class SpringerCrawler(object):
             raise
 
     def get_springer_total(self):
+        """Get total number of Springer records.
+
+        Returns:
+            int
+        """
         params = {"q": "sort:date", "s": 1, "p": 1, "api_key": self.api_key}
         response = requests.get(self.api_endpoint, params=params)
         page_data = response.json()
