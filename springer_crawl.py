@@ -1,95 +1,82 @@
 # Generate OPDS v2.0 JSON from API output
-import json
-import os
-import re
-import requests
-import sys
-from datetime import datetime
 from configparser import ConfigParser
-from dcps.pickle_utils import unpickle_it
+from pathlib import Path
 
-MY_NAME = __file__
-MY_PATH = os.path.dirname(__file__)
-SCRIPT_NAME = os.path.basename(MY_NAME)
-config_path = os.path.join(MY_PATH, "config.ini")
-config = ConfigParser()
-config.read(config_path)
+import requests
 
 
-API_ENDPOINT = 'https://api.springernature.com/bookmeta/v1/json'
-API_KEY = config["SPRINGER"]["apiKey"]
-ENTITLEMENT_ID = config["API"]["entitlementID"]
-PER_PAGE = 100
+class SpringerCrawler(object):
+    def __init__(self):
+        self.config = ConfigParser()
+        current_path = Path(__file__).parents[0].resolve()
+        config_path = Path(current_path, "config.ini")
+        self.config.read(str(config_path))
+        self.api_key = self.config["SPRINGER"]["apiKey"]
+        self.api_endpoint = "https://api.springernature.com/bookmeta/v1/json"
+        self.per_page = 100
 
-NOW = datetime.utcnow().strftime(
-    "%Y-%m-%dT%H:%M:%S.%fZ")  # Current timestamp in ISO
+    def crawl(self, already_crawled=0):
+        """Crawl Springer API for book records.
 
+        Args:
+            already_crawled (int): offset to skip crawling
 
-def page_cache_path(page_number, output_base_dir):
-  cache_suffix = ('%06x' % page_number)
-  subdir = cache_suffix[-2:]
-  cache_dir = os.path.join(output_base_dir, subdir)
-  os.makedirs(cache_dir, exist_ok=True)
-  cache_name = 'page-%s.json' % cache_suffix
-  return os.path.join(cache_dir, cache_name)
+        Yields:
+            dict: book record json
+        """
+        total = self.get_springer_total()
+        records_retrieved = 0
+        remaining = total - already_crawled
+        while True:
+            try:
+                start = remaining - self.per_page
+                page_data = self.get_springer_page(start)
+                for record in page_data["records"]:
+                    yield record
+                current_total = int(page_data["result"][0]["total"])
+                if current_total != total:
+                    difference = current_total - total
+                    remaining += difference
+                    total = current_total
+                records_retrieved += self.per_page
+                remaining -= self.per_page
+            except Exception as err:
+                raise (
+                    err,
+                    f"Requested {self.per_page} starting at {start} with {total} total records.",
+                )
+                pass
 
-def cache_page(page_number, output_base_dir):
-    start = (page_number - 1) * PER_PAGE + 1
-    out_file = page_cache_path(page_number, output_base_dir)
-    url = '%s?q=sort:date&s=%s&p=%s&api_key=%s' % (API_ENDPOINT, str(start), str(PER_PAGE), API_KEY)
-    page = springer_get(url)
-    with open(out_file, "w") as f:
-        json.dump(page, f, indent=2)
-    return page
+    def get_springer_page(self, start):
+        """Get page of records from Springer API.
 
-def result(page):
-    return page["result"][0]
+        Args:
+            start (int): return results starting at the number specified
 
-def count(page):
-    return int(result(page)["recordsDisplayed"])
+        Returns:
+            dict: page data
+        """
+        try:
+            params = {
+                "q": "sort:date",
+                "s": start,
+                "p": self.per_page,
+                "api_key": self.api_key,
+            }
+            response = requests.get(self.api_endpoint, params=params)
+            response.raise_for_status()
+            page_data = response.json()
+            return page_data
+        except Exception:
+            raise
 
-def remaining(page):
-    return int(result(page)["total"]) >= (int(result(page)["start"]) + PER_PAGE)
+    def get_springer_total(self):
+        """Get total number of Springer records.
 
-
-def springer_get(url):
-    try:
-        print(url)
-        initial_page = requests.get(url)
-        initial_page.raise_for_status()
-    except Exception as err:
-        print('*** get_springer_count request error: ' + str(err))
-    else:
-        return json.loads(initial_page.content)
-
-def get_result_pages(springer_response):
-    total = int(result(springer_response)['total'])
-    if (0 == total % PER_PAGE):
-        return total / PER_PAGE
-    else:
-        return 1 + total / PER_PAGE
-
-def springer_build_cache(output_base_dir):
-    if sys.argv[1]:
-        page_ix = int(sys.argv[1])
-    else:
-        page_ix = 1
-    page = cache_page(page_ix, output_base_dir)
-    total = count(page)
-    expected_pages = get_result_pages(page)
-    while remaining(page):
-        page_ix = page_ix + 1
-        page = cache_page(page_ix, output_base_dir)
-        total = total + count(page)
-
-    print("Expected " + str(expected_pages) + " pages.")
-    print("Retrieved " + str(page_ix) + " pages.")
-    print("Retrieved " + str(total) + " books.")
-
-def main():
-    output_base_dir = "output_test/springer/crawl"
-    os.makedirs(output_base_dir, exist_ok=True)
-    springer_build_cache(output_base_dir)
-
-if __name__ == "__main__":
-    main()
+        Returns:
+            int
+        """
+        params = {"q": "sort:date", "s": 1, "p": 1, "api_key": self.api_key}
+        response = requests.get(self.api_endpoint, params=params)
+        page_data = response.json()
+        return int(page_data["result"][0]["total"])
