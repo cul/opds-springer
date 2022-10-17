@@ -6,7 +6,7 @@ import requests
 import sys
 from datetime import datetime
 from configparser import ConfigParser
-from dcps.pickle_utils import unpickle_it
+#from dcps.pickle_utils import unpickle_it
 
 MY_NAME = __file__
 MY_PATH = os.path.dirname(__file__)
@@ -87,7 +87,7 @@ def springer_build_cache(output_base_dir):
     print("Retrieved " + str(total) + " books.")
 
 def main():
-    output_base_dir = "output_test/springer/crawl"
+    output_base_dir = "output_test/springer/crawl-20220801"
     os.makedirs(output_base_dir, exist_ok=True)
     springer_build_cache(output_base_dir)
 

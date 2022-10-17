@@ -171,9 +171,7 @@ class SessionManager(object):
     def initialize_data(cls, session, set_site_configuration=True):
         return session
 
-from .datasource import DataSource
-from .identifier import Equivalency, Identifier
-from .classification import Classification, Genre, Subject, IdentifierGenre
+from .classification import Classification, Genre, NONFICTION_CLASSIFIER, Subject, EditionGenre
 from .contribution import Contribution, Contributor
 from .edition import Edition
 from .resource import Resource

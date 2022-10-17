@@ -37,14 +37,16 @@ class Edition(Base, EditionConstants):
     __tablename__ = "editions"
     id = Column(Integer, primary_key=True)
 
-    data_source_id = Column(Integer, ForeignKey("datasources.id"), index=True)
-
-    primary_identifier_id = Column(Integer, ForeignKey("identifiers.id"), index=True)
-    primary_identifier = relationship("Identifier", foreign_keys=primary_identifier_id, back_populates="editions")
+    primary_identifier = Column(String(64))
+    print_isbn = Column(String(64))
+    e_isbn = Column(String(64))
+    bib_id = Column(String(64))
 
     title = Column(String(512), index=True)
 
+    classifications = relationship("Classification")
     contributions = relationship("Contribution", backref="edition")
+    resources = relationship("Resource")
 
     language = Column(String(16), index=True)
     publisher = Column(String(128), index=True)

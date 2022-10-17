@@ -23,12 +23,16 @@ def parsing_errors(manifest_stream, log_level=logging.WARNING):
 
     parser_factory = OPDS2FeedParserFactory()
     parser = parser_factory.create()
-
-    return parser.parse_stream(manifest_stream).errors
+    parsed = parser.parse_stream(manifest_stream)
+    if parsed.errors:
+        for key in parsed:
+            print(key)
+    return parsed.errors
 
 def validate(stream_id, encoding="utf-8", log_level=logging.WARNING):
     try:
-        return len(parsing_errors(stream_manifest(stream_id, encoding), log_level)) == 0
+        errors = parsing_errors(stream_manifest(stream_id, encoding), log_level)
+        return len(errors) == 0
     except:
         print(sys.exc_info())
         return False

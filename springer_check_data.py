@@ -1,6 +1,6 @@
 from sqlalchemy.orm import joinedload
 from springer import db_session
-from springer.model import SessionManager, Identifier, Edition, Subject, Classification, Contribution, DataSource, get_one_or_create
+from springer.model import SessionManager, Edition, Subject, Classification, Contribution, get_one_or_create
 
 def main():
     q = db_session.query(Identifier).join(Edition, Edition.primary_identifier_id == Identifier.id, isouter=True)

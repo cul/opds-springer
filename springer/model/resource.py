@@ -17,16 +17,13 @@ class Resource(Base):
     # but it may also be a made-up URI.
     url = Column(String(1024), index=True)
 
-    # The DataSource that is the controlling authority for this Resource.
-    data_source_id = Column(Integer, ForeignKey("datasources.id"), index=True)
-
     ## This column taken from the Hyperlink class in ThePalaceProject/circulation
     ## which is a join table between identifiers and resources
     # A Hyperlink is always associated with some Identifier.
-    identifier_id = Column(
-        Integer, ForeignKey("identifiers.id"), index=True, nullable=False
+    edition_id = Column(
+        Integer, ForeignKey("editions.id"), index=True, nullable=False
     )
-    identifier = relationship("Identifier", foreign_keys=identifier_id)
+    edition = relationship("Edition", foreign_keys=edition_id)
 
     ## This column taken from the Hyperlink class in ThePalaceProject/circulation
     ## which is a join table between identifiers and resources

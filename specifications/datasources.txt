@@ -1,0 +1,14 @@
+datasources.txt
+
+KBART: title, id (doi, from title_id), isbn (print_identifier), eisbn (online_identifier), publisher (publisher_name), publication date (date_monograph_published_online), load date
+
+API: authors/editors, subject, resource urls, language, description, publication date
+
+CLIO: bibid for isbn
+
+API: has resource urls
+SUBJECTS: has classifications
+CLIO: has bibid
+
+API and SUBJECTS -> opds feed
+API and SUBJECTS and CLIO -> in holdings feed

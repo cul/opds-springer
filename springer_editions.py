@@ -125,17 +125,13 @@ def load_edition(data_source, edition_data):
     return (identifier, new)
 
 def main():
-    find_with = dict(
-        name='SpringerNature',
-        primary_identifier_type='DOI'
-    )
     create_with = dict()
     data_source, new = get_one_or_create(
         db_session, DataSource, create_method_kwargs=create_with, **find_with
     )
     db_session.flush()
     num_identifiers = 0
-    crawl_log_path = config['SPRINGER']['crawlLog']
+    api_cache_path = config['SPRINGER']['apiCache']
     with open(crawl_log_path) as crawl_log:
         for crawl_cache in crawl_log:
             with open(crawl_cache.rstrip()) as crawl_file:
