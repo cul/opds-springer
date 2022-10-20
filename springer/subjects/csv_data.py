@@ -45,6 +45,7 @@ def get_subjects_dict(csv_reader, head_row=True):
         doi = row[0]
         subjects = [row[x + 1] for x in range(len(row) - 1)]
         subject_data[doi] = subjects
+    return subject_data
 
 
 def generate_subjects(csv_reader, head_row=True):
